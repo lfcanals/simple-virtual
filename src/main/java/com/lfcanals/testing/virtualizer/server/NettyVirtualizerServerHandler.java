@@ -4,6 +4,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.net.URISyntaxException;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -22,11 +24,13 @@ import java.util.regex.Matcher;
  */
 public class NettyVirtualizerServerHandler extends 
 SimpleChannelInboundHandler<String> {
+    private final Logger logger = LoggerFactory.getLogger(
+            NettyVirtualizerServerHandler.class);
 
     // Read only, no worry about concurrency
     // not necessary a map, because the use a equential full scan looking for
     // pattern matching... but it's more expressive 
-    private final Map<Pattern, String> patterns;
+    private final Map<Pattern, ScriptOrPattern> patterns;
 
     public NettyVirtualizerServerHandler() throws IOException {
         try {
@@ -63,39 +67,78 @@ SimpleChannelInboundHandler<String> {
                 }
 
                 this.patterns.put(Pattern.compile(inputPattern.toString()), 
-                        outputPattern.toString());
+                        new OutputPattern(outputPattern.toString()));
             }
         } catch(URISyntaxException use) {
             throw new IOException(use);
         }
     }
 
-	@Override
-	public void messageReceived(ChannelHandlerContext ctx, String msg) {
+    @Override
+    public void messageReceived(ChannelHandlerContext ctx, String msg) {
         System.out.println();
         System.out.println(">" + msg);
-        for(final Map.Entry<Pattern, String> entry : this.patterns.entrySet()) {
+        for(final Map.Entry<Pattern, ScriptOrPattern> entry 
+                : this.patterns.entrySet()) {
             final Matcher matcher = entry.getKey().matcher(msg);
             if(matcher.find()) {
-                final String answer = matcher.replaceAll(entry.getValue()) 
-                        + "\n";
-                System.out.print("<" + answer);
-                ctx.writeAndFlush(Unpooled.copiedBuffer(answer, CharsetUtil.UTF_8));
+                if(entry.getValue() instanceof OutputPattern) {
+                    final String answer = matcher.replaceAll(
+                            entry.getValue().getText()) + "\n";
+                    System.out.print("<" + answer);
+                    ctx.writeAndFlush(Unpooled.copiedBuffer(answer, 
+                            CharsetUtil.UTF_8));
+                } else {
+                    logger.error("Output controlled by script not still "
+                            + "implemented");
+                }
                 break;
             }
         }
-	}
+    }
 
-	@Override
-	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-		System.err.println("Exception caught on channel!");
-		cause.printStackTrace();
-		ctx.close();
-	}
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        System.err.println("Exception caught on channel!");
+        cause.printStackTrace();
+        ctx.close();
+    }
 
-	@Override
-	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-		System.out.println("Channel is inactive");
-		super.channelInactive(ctx);
-	}
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        System.out.println("Channel is inactive");
+        super.channelInactive(ctx);
+    }
+
+
+    //
+    // Private class
+    //
+
+    /**
+     * Interface marker for a script to execute on pattern matching or
+     * a pattern to substitute in case of pattern matching.
+     */
+    private interface ScriptOrPattern {
+        public String getText();
+    }
+
+    private class Script implements ScriptOrPattern {
+        @Override
+        public String getText() {
+            return "NOT IMPLEMENTED";
+        }
+    }
+
+    private class OutputPattern implements ScriptOrPattern {
+        private final String text;
+        public OutputPattern(final String text) {
+            this.text = text;
+        }
+
+        @Override
+        public String getText() {
+            return this.text;
+        }
+    }
 }
