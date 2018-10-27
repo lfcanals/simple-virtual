@@ -8,11 +8,6 @@ import com.lfcanals.testing.virtualizer.server.NettyStringTCPServer;
  */
 public final class SimpleVirtualizer {
 
-    private static final String UDP = "UDP";
-    private static final String TCP = "TCP";
-
-    private static NettyStringServer server;
-
     /**
      * @param args
      * @throws Exception
@@ -20,36 +15,31 @@ public final class SimpleVirtualizer {
      */
     public static void main(String[] args) throws Exception {
         if (args.length < 1) {
-            System.err.println("Try calling with: <port> "
-                    + "[maximum_packet_length]");
+            System.err.println("Try calling with: TCP|UDP <port>");
+            System.exit(1);
         }
 
         // Read and assign connection type
-        server = new NettyStringTCPServer();
+        final NettyStringServer server;
+        if(args[0].equals("TCP")) {
+            server = new NettyStringTCPServer();
+        } else {
+            System.err.println("At this moment, only TCP protocol is accepted");
+            throw new UnsupportedOperationException();
+        }
 
-        // Read and assign port
-        Integer port = Integer.parseInt(args[0]);
+        final int port = Integer.parseInt(args[1]);
         if (port < 1 || port > 65535) {
             System.err.println("Provided port is should be "
                     + "between 1..65535!");
-            return;
-        }
-
-        // Read and assign maximum packet length
-        Integer maxPacketLength;
-        if (args.length > 1) {
-            maxPacketLength = Integer.parseInt(args[1]);
-        } else {
-            maxPacketLength = 65535;
-            System.out.println("Packet length is set to " 
-                            + maxPacketLength);
+            System.exit(1);
         }
 
         System.out.println("Initializing the server...");
         server.initialize();
 
         System.out.println("Configuring the server...");
-        server.configure(port, maxPacketLength);
+        server.configure(port, 65535);
 
         System.out.println("Starting the server...");
         server.start().channel().closeFuture().sync();
