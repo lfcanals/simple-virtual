@@ -17,6 +17,17 @@ import io.netty.util.CharsetUtil;
  *
  */
 public final class NettyStringTCPServer extends NettyAbstractStringServer {
+    private final boolean savingMode;
+
+    /**
+     * Creates a server TCP virtualizer.
+     * @param savingMode true if server will work in recording mode, letting
+     * user type answers in console and saving the session.
+     */
+    public NettyStringTCPServer(final boolean savingMode) {
+        this.savingMode = savingMode;
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -38,8 +49,11 @@ public final class NettyStringTCPServer extends NettyAbstractStringServer {
                     pipeline.addLast("stringDecoder", 
                     new StringDecoder(CharsetUtil.UTF_8));
                     // Business logic handler
-                    pipeline.addLast(
-                    new NettyVirtualizerServerHandler());
+                    if(savingMode) {
+                        pipeline.addLast(new NettyRecordSessionServerHandler());
+                    } else {
+                        pipeline.addLast(new NettyVirtualizerServerHandler());
+                    }
                 } catch(IOException ioe) {
                     throw new RuntimeException(ioe);
                 }

@@ -69,16 +69,17 @@
 
                 <configuration>
                     <classpathScope>test</classpathScope>
-                    <executable>${jdk.server.java.binary}</executable>
+                    <executable>java</executable>
                     <arguments>
                         <argument>-Xms256m</argument>
                         <argument>-Xmx256m</argument>
                         <argument>-Dlogback.configurationFile=logback-standalone.xml</argument>
                         <argument>-classpath</argument>
                         <classpath/>
-                        <argument>
-                         com.lfcanals.testing.virtualization.SimpleVirtualizer
-                        </argument>
+                        <mainClass>
+                         com.lfcanals.testing.virtualizer.SimpleVirtualizer
+                        </mainClass>
+                        <argument>TCP</argument>
                         <argument>2444</argument>
                     </arguments>
                 </configuration>
