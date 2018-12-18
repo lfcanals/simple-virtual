@@ -29,7 +29,7 @@ public final class NettyStringTCPServer extends NettyAbstractStringServer {
     }
 
     /**
-     * {@inheritDoc}
+     * Starts up server.
      */
     public ChannelFuture start() throws InterruptedException {
 

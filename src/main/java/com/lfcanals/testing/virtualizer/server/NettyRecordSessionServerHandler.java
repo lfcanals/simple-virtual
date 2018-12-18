@@ -6,17 +6,8 @@ import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.net.URISyntaxException;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
+import java.util.Scanner;
 
 /**
  * Simple handler for received string messages and let the user to 
@@ -25,76 +16,22 @@ import java.util.regex.Matcher;
 public class NettyRecordSessionServerHandler extends 
 SimpleChannelInboundHandler<String> {
     private final Logger logger = LoggerFactory.getLogger(
-            NettyVirtualizerServerHandler.class);
+           NettyRecordSessionServerHandler .class);
 
-    // Read only, no worry about concurrency
-    // not necessary a map, because the use a equential full scan looking for
-    // pattern matching... but it's more expressive 
-    private final Map<Pattern, ScriptOrPattern> patterns;
+    private final Scanner stdin;
 
     public NettyRecordSessionServerHandler() throws IOException {
-        try {
-            this.patterns = new HashMap<>();
-            for(final Path caseInputPath : Files.newDirectoryStream(
-                Paths.get(ClassLoader.getSystemResource("patterns").toURI()))) {
-                if( ! caseInputPath.toString().endsWith(".input") ) {
-                    continue;
-                }
-                final Path caseOutputPath = Paths.get(
-                        caseInputPath.toString().replace(".input", ".output"));
-                final List<String> inputPatternList = Files.readAllLines(
-                        caseInputPath, Charset.forName("UTF-8"));
-                final List<String> outputPatternList = Files.readAllLines(
-                        caseOutputPath, Charset.forName("UTF-8"));
-
-                final StringBuilder outputPattern = new StringBuilder();
-                boolean firstLine = true;
-                for(final String l : outputPatternList) {
-                    if(!firstLine) {
-                        outputPattern.append("\n");
-                    }
-                    outputPattern.append(l);
-                    firstLine = false;
-                }
-                final StringBuilder inputPattern = new StringBuilder();
-                firstLine = true;
-                for(final String l : inputPatternList) {
-                    if(!firstLine) {
-                        inputPattern.append("\n");
-                    }
-                    inputPattern.append(l);
-                    firstLine = false;
-                }
-
-                this.patterns.put(Pattern.compile(inputPattern.toString()), 
-                        new OutputPattern(outputPattern.toString()));
-            }
-        } catch(URISyntaxException use) {
-            throw new IOException(use);
-        }
+        this.stdin = new Scanner(System.in);
     }
 
     @Override
     public void messageReceived(ChannelHandlerContext ctx, String msg) {
         System.out.println();
         System.out.println(">" + msg);
-        for(final Map.Entry<Pattern, ScriptOrPattern> entry 
-                : this.patterns.entrySet()) {
-            final Matcher matcher = entry.getKey().matcher(msg);
-            if(matcher.find()) {
-                if(entry.getValue() instanceof OutputPattern) {
-                    final String answer = matcher.replaceAll(
-                            entry.getValue().getText()) + "\n";
-                    System.out.print("<" + answer);
-                    ctx.writeAndFlush(Unpooled.copiedBuffer(answer, 
-                            CharsetUtil.UTF_8));
-                } else {
-                    logger.error("Output controlled by script not still "
-                            + "implemented");
-                }
-                break;
-            }
-        }
+
+        final String answer = stdin.nextLine() + "\n";
+        System.out.print("<" + answer);
+        ctx.writeAndFlush(Unpooled.copiedBuffer(answer, CharsetUtil.UTF_8));
     }
 
     @Override

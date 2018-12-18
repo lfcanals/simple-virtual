@@ -23,9 +23,14 @@ public final class SimpleVirtualizer {
         if(args.length >= 3) {
             if(args[2].toLowerCase().equals("save")) {
                 savingMode = true;
+                System.out.println("Saving mode enabled. "
+                        + "Use standard input to provide answers to requests");
+            } else if(args[2].toLowerCase().equals("play")) {
+                savingMode = false;
             } else {
-                System.err.println("Third parameter only can be 'save'," 
-                        + " in order to enable saving mode");
+                System.err.println("Third parameter only can be either 'save'"
+                        + " or 'play', in order to enable saving mode or "
+                        + "player mode");
             }
         } else {
             savingMode = false;

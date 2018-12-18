@@ -38,6 +38,13 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+<!--
+    <properties>
+        <app.mode>${app.mode}</app.mode>
+    </properties>
+-->
+
     <build>
         <plugins>
             <plugin>
@@ -81,6 +88,7 @@
                         </mainClass>
                         <argument>TCP</argument>
                         <argument>2444</argument>
+                        <argument>${app.mode}</argument>
                     </arguments>
                 </configuration>
             </plugin>
