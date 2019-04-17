@@ -59,7 +59,7 @@ public final class SimpleVirtualizer {
         System.out.println("Configuring the server...");
         server.configure(port, 65535);
 
-        System.out.println("Starting the server...");
+        System.out.println("Starting the server...port " + port);
         server.start().channel().closeFuture().sync();
     }
 }
